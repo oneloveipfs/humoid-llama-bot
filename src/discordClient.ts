@@ -24,15 +24,18 @@ export default class DiscordHumoid extends ChatHumoid {
             if (msg.webhookId) return
             if (msg.author.id === this.client.user!.id) return
             if (msg.channel.id !== config.discord_channel_id) return
-            if (msg.content.startsWith(config.discord_ignore_prefix)) return
+            if (msg.content.startsWith(config.ignore_prefix)) return
 
             let reply = await msg.reply({
                 content: config.discord_loading_emoji_id
             })
             let responseProgress = ''
+            let responseLastLength = 0
             let stream = setInterval(async ():Promise<void> => {
-                if (responseProgress.length > 0)
+                if (responseProgress.length > responseLastLength) {
+                    responseLastLength = responseProgress.length
                     await reply.edit(responseProgress+' '+config.discord_loading_emoji_id)
+                }
             },1000)
             let answer = await this.llama.prompt(msg.content, (answerStream) => responseProgress += answerStream)
             clearInterval(stream)

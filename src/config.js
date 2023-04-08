@@ -13,12 +13,17 @@ let config = {
     exec_args: '',
     model_path: '',
     prompt_file: '',
+    ignore_prefix: '~',
 
     // discord
     discord_bot_token: '',
     discord_channel_id: '',
-    discord_ignore_prefix: '~',
-    discord_loading_emoji_id: ''
+    discord_loading_emoji_id: '',
+
+    // matrix
+    matrix_bot_token: '',
+    matrix_homeserver: '',
+    matrix_room_id: '',
 }
 
 // Config overwrites through CLI args or environment vars

@@ -6,4 +6,6 @@ export default abstract class ChatHumoid {
     constructor(llama: LlamaCpp) {
         this.llama = llama
     }
+
+    abstract login(): Promise<void>
 }
