@@ -52,7 +52,7 @@ export class LlamaCpp {
         }
     }
 
-    prompt(prompt = '', stream: (data: string) => void):Promise<string> {
+    prompt(prompt: string, stream: (data: string) => void):Promise<string> {
         if (this.daemon === null)
             throw new Error('Daemon is not running')
 
