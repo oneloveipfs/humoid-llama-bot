@@ -13,9 +13,7 @@ const STARTER = '[0m'
 const TERMINATOR = '[1m[32m\n> '
 
 export class LlamaCpp {
-    constructor() {
-        this.daemon = null
-    }
+    private daemon: ReturnType<typeof spawn> | null = null
 
     async start() {
         if (this.daemon !== null)
@@ -36,14 +34,14 @@ export class LlamaCpp {
 
         this.daemon = spawn(config.exec_path, args, { stdio: ['pipe', 'pipe', 'ignore'] })
         await new Promise((resolve) => {
-            let started = (data) => {
+            let started = (data: any) => {
                 if (data.toString().includes('>')) {
                     logger.info('llama.cpp daemon started')
-                    this.daemon.stdout.removeListener('data', started)
+                    this.daemon!.stdout!.removeListener('data', started)
                     resolve(true)
                 }
             }
-            this.daemon.stdout.on('data', started)
+            this.daemon!.stdout!.on('data', started)
         })
     }
 
@@ -54,38 +52,36 @@ export class LlamaCpp {
         }
     }
 
-    prompt(prompt = '', stream = () => {}) {
+    prompt(prompt = '', stream: (data: string) => void) {
         if (this.daemon === null)
             throw new Error('Daemon is not running')
 
-        logger.info('[New message] '+prompt)
+        logger.info('New message')
+        logger.debug(prompt)
         prompt = prompt.replace(/\n/g, '\\\n')
-        this.daemon.stdin.write(prompt+'\n')
+        this.daemon!.stdin!.write(prompt+'\n')
     
         return new Promise((resolve, reject) => {
             let response = ''
-            let timeoutId
+            let timeoutId: NodeJS.Timeout
             let hasBegunOutput = false
-            let eor = false
     
-            const onStdoutData = (data) => {
-                let text = data.toString()
+            const onStdoutData = (data: any) => {
+                let text: string = data.toString()
                 if (timeoutId)
                     clearTimeout(timeoutId)
 
                 if (!hasBegunOutput && text.startsWith(STARTER)) {
                     text = text.replace(STARTER,'')
-                } else if (!eor && text.endsWith(TERMINATOR)) {
-                    text = text.slice(0,text.length-TERMINATOR.length)
-                    eor = true
                 }
                 hasBegunOutput = true
                 response += text
                 stream(text)
-
-                if (eor) {
+                if (response.endsWith(TERMINATOR)) {
+                    response = response.slice(0,response.length-TERMINATOR.length)
+                    logger.trace(STARTER) // reset log formatting
                     logger.debug('End of response')
-                    terminateAndResolve(response) // Remove the trailing "\f" delimiter
+                    terminateAndResolve(response)
                 } else {
                     timeoutId = setTimeout(() => {
                         logger.warn('Response timeout')
@@ -94,15 +90,15 @@ export class LlamaCpp {
                 }
             }
     
-            const onStdoutError = (err) => {
-                this.daemon.stdout.removeListener("data", onStdoutData)
-                this.daemon.stdout.removeListener("error", onStdoutError)
+            const onStdoutError = (err: any) => {
+                this.daemon!.stdout!.removeListener("data", onStdoutData)
+                this.daemon!.stdout!.removeListener("error", onStdoutError)
                 reject(err)
             }
     
-            const terminateAndResolve = (finalResponse) => {
-                this.daemon.stdout.removeListener("data", onStdoutData)
-                this.daemon.stdout.removeListener("error", onStdoutError)
+            const terminateAndResolve = (finalResponse: any) => {
+                this.daemon!.stdout!.removeListener("data", onStdoutData)
+                this.daemon!.stdout!.removeListener("error", onStdoutError)
                 let endsWithEndings = false
                 for (let i in ENDINGS)
                     if (finalResponse.endsWith(ENDINGS[i])) {
@@ -117,8 +113,8 @@ export class LlamaCpp {
                 resolve(finalResponse.trim())
             }
     
-            this.daemon.stdout.on("data", onStdoutData)
-            this.daemon.stdout.on("error", onStdoutError)
+            this.daemon!.stdout!.on("data", onStdoutData)
+            this.daemon!.stdout!.on("error", onStdoutError)
         })
     }
 }
