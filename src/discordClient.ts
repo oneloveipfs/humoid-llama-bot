@@ -1,20 +1,19 @@
 import config from './config.js'
 import logger from './logger.js'
+import ChatHumoid from './chatClient.js'
 import type LlamaCpp from './llama.js'
 import {Client, GatewayIntentBits} from 'discord.js'
 
-export default class DiscordHumoid {
+export default class DiscordHumoid extends ChatHumoid {
     private client: Client
-    private llama: LlamaCpp
-    
+
     constructor(llama: LlamaCpp) {
+        super(llama)
         this.client = new Client({ intents: [
             GatewayIntentBits.Guilds,
             GatewayIntentBits.GuildMessages,
             GatewayIntentBits.MessageContent
         ]})
-
-        this.llama = llama
     }
 
     async login():Promise<void> {
