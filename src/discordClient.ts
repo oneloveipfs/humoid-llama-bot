@@ -1,0 +1,43 @@
+import config from './config.js'
+import logger from './logger.js'
+import type LlamaCpp from './llama.js'
+import {Client, GatewayIntentBits} from 'discord.js'
+
+export default class DiscordHumoid {
+    private client: Client
+    private llama: LlamaCpp
+    
+    constructor(llama: LlamaCpp) {
+        this.client = new Client({ intents: [
+            GatewayIntentBits.Guilds,
+            GatewayIntentBits.GuildMessages,
+            GatewayIntentBits.MessageContent
+        ]})
+
+        this.llama = llama
+    }
+
+    async login():Promise<void> {
+        await this.client.login(config.discord_bot_token)
+        logger.info(`Logged into Discord as ${this.client.user!.tag}`)
+        
+        this.client.on('messageCreate', async (msg) => {
+            if (msg.webhookId) return
+            if (msg.author.id === this.client.user!.id) return
+            if (msg.channel.id !== config.discord_channel_id) return
+            if (msg.content.startsWith(config.discord_ignore_prefix)) return
+
+            let reply = await msg.reply({
+                content: config.discord_loading_emoji_id
+            })
+            let responseProgress = ''
+            let stream = setInterval(async ():Promise<void> => {
+                if (responseProgress.length > 0)
+                    await reply.edit(responseProgress+' '+config.discord_loading_emoji_id)
+            },1000)
+            let answer = await this.llama.prompt(msg.content, (answerStream) => responseProgress += answerStream)
+            clearInterval(stream)
+            await reply.edit(answer)
+        })
+    }
+}

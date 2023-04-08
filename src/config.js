@@ -12,7 +12,13 @@ let config = {
     exec_path: '',
     exec_args: '',
     model_path: '',
-    prompt_file: ''
+    prompt_file: '',
+
+    // discord
+    discord_bot_token: '',
+    discord_channel_id: '',
+    discord_ignore_prefix: '~',
+    discord_loading_emoji_id: ''
 }
 
 // Config overwrites through CLI args or environment vars

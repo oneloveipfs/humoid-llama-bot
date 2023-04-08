@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "type": "module",
-  "main": "src/index.js",
+  "main": "src/index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "ts-node --esm src/index.ts"
@@ -11,6 +11,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "discord.js": "^14.9.0",
     "dotenv": "^16.0.3",
     "log4js": "^6.9.1",
     "yargs": "^17.7.1"
