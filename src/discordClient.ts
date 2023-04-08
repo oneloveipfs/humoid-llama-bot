@@ -16,7 +16,7 @@ export default class DiscordHumoid extends ChatHumoid {
         ]})
     }
 
-    async login():Promise<void> {
+    public async login():Promise<void> {
         await this.client.login(config.discord_bot_token)
         logger.info(`Logged into Discord as ${this.client.user!.tag}`)
         
@@ -25,6 +25,13 @@ export default class DiscordHumoid extends ChatHumoid {
             if (msg.author.id === this.client.user!.id) return
             if (msg.channel.id !== config.discord_channel_id) return
             if (msg.content.startsWith(config.ignore_prefix)) return
+
+            if (this.llama.isRunning()) {
+                await msg.reply({
+                    content: 'Another request is already running, please wait until it completes and try again later.'
+                })
+                return
+            }
 
             let reply = await msg.reply({
                 content: config.discord_loading_emoji_id

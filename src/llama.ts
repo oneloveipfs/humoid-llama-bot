@@ -14,6 +14,7 @@ const TERMINATOR = '[1m[32m\n> '
 
 export class LlamaCpp {
     private daemon: ReturnType<typeof spawn> | null = null
+    private running: boolean = false
 
     public async start():Promise<void> {
         if (this.daemon !== null)
@@ -45,17 +46,22 @@ export class LlamaCpp {
         })
     }
 
-    stop():void {
+    public stop():void {
         if (this.daemon) {
             this.daemon.kill()
             this.daemon = null
         }
     }
 
-    prompt(prompt: string, stream: (data: string) => void):Promise<string> {
+    public isRunning():boolean {
+        return this.running
+    }
+
+    public prompt(prompt: string, stream: (data: string) => void):Promise<string> {
         if (this.daemon === null)
             throw new Error('Daemon is not running')
 
+        this.running = true
         logger.info('New message')
         logger.debug(prompt)
         prompt = prompt.replace(/\n/g, '\\\n')
@@ -93,6 +99,7 @@ export class LlamaCpp {
             const onStdoutError = (err: any) => {
                 this.daemon!.stdout!.removeListener("data", onStdoutData)
                 this.daemon!.stdout!.removeListener("error", onStdoutError)
+                this.running = false
                 reject(err)
             }
     
@@ -110,6 +117,7 @@ export class LlamaCpp {
                     finalResponseSplit.pop()
                     finalResponse = finalResponseSplit.join('###')
                 }
+                this.running = false
                 resolve(finalResponse.trim())
             }
     

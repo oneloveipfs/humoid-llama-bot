@@ -27,6 +27,11 @@ export default class MatrixHumoid extends ChatHumoid {
             if (event.content['m.relates_to'] && event.content['m.relates_to'].rel_type === 'm.replace') return
             if (event.content.body.startsWith('~')) return
 
+            if (this.llama.isRunning()) {
+                await this.client.replyNotice(roomId,event,'Another request is already running, please wait until it completes and try again later.')
+                return
+            }
+
             let replyId = await this.client.replyHtmlText(roomId,event,'Waiting for response...')
             let responseProgress = ''
             let responseLastLength = 0
