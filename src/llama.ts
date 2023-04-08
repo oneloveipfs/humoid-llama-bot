@@ -15,7 +15,7 @@ const TERMINATOR = '[1m[32m\n> '
 export class LlamaCpp {
     private daemon: ReturnType<typeof spawn> | null = null
 
-    async start() {
+    public async start():Promise<void> {
         if (this.daemon !== null)
             throw new Error('Daemon is already running')
 
@@ -33,26 +33,26 @@ export class LlamaCpp {
             args.push(moarArgs[i])
 
         this.daemon = spawn(config.exec_path, args, { stdio: ['pipe', 'pipe', 'ignore'] })
-        await new Promise((resolve) => {
+        await new Promise<void>((resolve) => {
             let started = (data: any) => {
                 if (data.toString().includes('>')) {
                     logger.info('llama.cpp daemon started')
                     this.daemon!.stdout!.removeListener('data', started)
-                    resolve(true)
+                    resolve()
                 }
             }
             this.daemon!.stdout!.on('data', started)
         })
     }
 
-    stop() {
+    stop():void {
         if (this.daemon) {
             this.daemon.kill()
             this.daemon = null
         }
     }
 
-    prompt(prompt = '', stream: (data: string) => void) {
+    prompt(prompt = '', stream: (data: string) => void):Promise<string> {
         if (this.daemon === null)
             throw new Error('Daemon is not running')
 
