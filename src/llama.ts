@@ -103,7 +103,7 @@ export class LlamaCpp {
                 reject(err)
             }
     
-            const terminateAndResolve = (finalResponse: any) => {
+            const terminateAndResolve = (finalResponse: string) => {
                 this.daemon!.stdout!.removeListener("data", onStdoutData)
                 this.daemon!.stdout!.removeListener("error", onStdoutError)
                 let endsWithEndings = false
@@ -118,6 +118,7 @@ export class LlamaCpp {
                     finalResponse = finalResponseSplit.join('###')
                 }
                 this.running = false
+                logger.debug(finalResponse.trim())
                 resolve(finalResponse.trim())
             }
     

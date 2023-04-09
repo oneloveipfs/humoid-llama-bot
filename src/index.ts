@@ -7,14 +7,17 @@ import MatrixHumoid from './matrixClient.js'
 let llm = new LlamaCpp()
 await llm.start()
 
+let discord = new DiscordHumoid(llm)
+let matrix = new MatrixHumoid(llm)
+
 if (config.discord_bot_token) {
-    let discord = new DiscordHumoid(llm)
     await discord.login()
+    matrix.registerBridge(discord)
 }
 
 if (config.matrix_bot_token) {
-    let matrix = new MatrixHumoid(llm)
     await matrix.login()
+    discord.registerBridge(matrix)
 }
 
 process.on('uncaughtException',(error) => logger.error(error))

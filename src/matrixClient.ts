@@ -8,6 +8,7 @@ import { marked } from 'marked'
 export default class MatrixHumoid extends ChatHumoid {
     private storage: SimpleFsStorageProvider
     private client: MatrixClient
+    private bridgedMsg: string = '' // bridged event id
 
     constructor(llama: LlamaCpp) {
         super(llama)
@@ -33,47 +34,54 @@ export default class MatrixHumoid extends ChatHumoid {
             }
 
             let replyId = await this.client.replyHtmlText(roomId,event,'Waiting for response...')
+            this.bridgeSend(event.content.body)
             let responseProgress = ''
             let responseLastLength = 0
             let stream = setInterval(async ():Promise<void> => {
                 if (responseProgress.length > responseLastLength) {
                     responseLastLength = responseProgress.length
-                    await this.client.sendEvent(roomId, 'm.room.message', {
-                        'm.new_content': {
-                            body: responseProgress+' ...',
-                            msgtype: 'm.text',
-                            format: "org.matrix.custom.html",
-                            formatted_body: marked.parse(responseProgress)+' ...'
-                        },
-                        body: '* '+responseProgress+' ...',
-                        formatted_body: '* '+marked.parse(responseProgress)+' ...',
-                        msgtype: 'm.text',
-                        format: 'org.matrix.custom.html',
-                        'm.relates_to': {
-                            rel_type: 'm.replace',
-                            event_id: replyId
-                        }
-                    })
+                    await this.editMsg(replyId, responseProgress, true)
                 }
             },5000)
             let answer = await this.llama.prompt(event.content.body, (answerStream) => responseProgress += answerStream)
             clearInterval(stream)
-            await this.client.sendEvent(roomId, 'm.room.message', {
-                'm.new_content': {
-                    body: answer,
-                    msgtype: 'm.text',
-                    format: "org.matrix.custom.html",
-                    formatted_body: marked.parse(answer)
-                },
-                body: '* '+answer,
-                formatted_body: '* '+marked.parse(answer),
+            await this.editMsg(replyId, answer, false)
+            this.bridgeUpdate(answer, true)
+        })
+    }
+
+    async bridgeInbox(message: string): Promise<void> {
+        if (this.bridgedMsg.length > 0)
+            throw new Error('Can only bridge new request when the current one is clear')
+        let bridgedPrompt = await this.client.sendNotice(config.matrix_room_id, message)
+        let bridgedPromptEvt = await this.client.getEvent(config.matrix_room_id, bridgedPrompt)
+        this.bridgedMsg = await this.client.replyHtmlText(config.matrix_room_id, bridgedPromptEvt, 'Waiting for response...')
+    }
+
+    async bridgeEdit(message: string, isFinal: boolean): Promise<void> {
+        if (this.bridgedMsg.length === 0)
+            throw new Error('There is no bridged message pending for response completion')
+        await this.editMsg(this.bridgedMsg, message, !isFinal)
+        if (isFinal)
+            this.bridgedMsg = ''
+    }
+
+    async editMsg(eventId: string, newMsg: string, progressSuffix: boolean = false): Promise<void> {
+        await this.client.sendEvent(config.matrix_room_id, 'm.room.message', {
+            'm.new_content': {
+                body: newMsg,
                 msgtype: 'm.text',
-                format: 'org.matrix.custom.html',
-                'm.relates_to': {
-                    rel_type: 'm.replace',
-                    event_id: replyId
-                }
-            })
+                format: "org.matrix.custom.html",
+                formatted_body: marked.parse(newMsg)+(progressSuffix?' ...':'')
+            },
+            body: '* '+newMsg,
+            formatted_body: '* '+marked.parse(newMsg)+(progressSuffix?' ...':''),
+            msgtype: 'm.text',
+            format: 'org.matrix.custom.html',
+            'm.relates_to': {
+                rel_type: 'm.replace',
+                event_id: eventId
+            }
         })
     }
 }
