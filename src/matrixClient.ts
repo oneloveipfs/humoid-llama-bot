@@ -26,7 +26,7 @@ export default class MatrixHumoid extends ChatHumoid {
             if (roomId !== config.matrix_room_id) return
             if (event.content.msgtype !== 'm.text') return
             if (event.content['m.relates_to'] && event.content['m.relates_to'].rel_type === 'm.replace') return
-            if (event.content.body.startsWith('~')) return
+            if (event.content.body.startsWith(config.ignore_prefix)) return
 
             if (this.llama.isRunning()) {
                 await this.client.replyNotice(roomId,event,'Another request is already running, please wait until it completes and try again later.')

@@ -37,7 +37,7 @@ export default class DiscordHumoid extends ChatHumoid {
             let reply = await msg.reply({
                 content: config.discord_loading_emoji_id
             })
-            this.bridgeSend(msg.content)
+            this.bridgeSend(msg.author.username+'#'+msg.author.tag+': '+msg.content)
             let responseProgress = ''
             let responseLastLength = 0
             let stream = setInterval(async ():Promise<void> => {
