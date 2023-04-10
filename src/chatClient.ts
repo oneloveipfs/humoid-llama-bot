@@ -36,17 +36,17 @@ export default abstract class ChatHumoid {
      * Disseminate incoming requests across bridge
      * @param message the incoming prompt request
      */
-    bridgeSend(message: string): void {
+    async bridgeSend(message: string): Promise<void> {
         for (let i in this.bridgedChats)
-            this.bridgedChats[i].bridgeInbox(message)
+            await this.bridgedChats[i].bridgeInbox(message)
     }
     /**
      * Disseminate message updates across bridge
      * @param message updated message
      * @param isFinal whether the updated message is the final response
      */
-    bridgeUpdate(message: string, isFinal: boolean): void {
+    async bridgeUpdate(message: string, isFinal: boolean): Promise<void> {
         for (let i in this.bridgedChats)
-            this.bridgedChats[i].bridgeEdit(message, isFinal)
+            await this.bridgedChats[i].bridgeEdit(message, isFinal)
     }
 }

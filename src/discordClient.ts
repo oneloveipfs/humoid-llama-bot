@@ -34,10 +34,11 @@ export default class DiscordHumoid extends ChatHumoid {
                 return
             }
 
+            this.llama.setRunning(true)
             let reply = await msg.reply({
                 content: config.discord_loading_emoji_id
             })
-            this.bridgeSend(msg.author.username+'#'+msg.author.tag+': '+msg.content)
+            await this.bridgeSend(msg.author.username+'#'+msg.author.tag+': '+msg.content)
             let responseProgress = ''
             let responseLastLength = 0
             let stream = setInterval(async ():Promise<void> => {
@@ -49,7 +50,8 @@ export default class DiscordHumoid extends ChatHumoid {
             let answer = await this.llama.prompt(msg.content, (answerStream) => responseProgress += answerStream)
             clearInterval(stream)
             await reply.edit(answer)
-            this.bridgeUpdate(answer, true)
+            await this.bridgeUpdate(answer, true)
+            this.llama.setRunning(false)
         })
     }
 

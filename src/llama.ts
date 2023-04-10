@@ -57,11 +57,15 @@ export class LlamaCpp {
         return this.running
     }
 
+    public setRunning(isRunning: boolean): void {
+        this.running = isRunning
+    }
+
     public prompt(prompt: string, stream: (data: string) => void):Promise<string> {
         if (this.daemon === null)
             throw new Error('Daemon is not running')
 
-        this.running = true
+        this.setRunning(true)
         logger.info('New message')
         logger.debug(prompt)
         prompt = prompt.replace(/\n/g, '\\\n')
@@ -117,11 +121,10 @@ export class LlamaCpp {
                     finalResponseSplit.pop()
                     finalResponse = finalResponseSplit.join('###')
                 }
-                this.running = false
                 logger.debug(finalResponse.trim())
                 resolve(finalResponse.trim())
             }
-    
+
             this.daemon!.stdout!.on("data", onStdoutData)
             this.daemon!.stdout!.on("error", onStdoutError)
         })

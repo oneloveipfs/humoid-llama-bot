@@ -33,8 +33,9 @@ export default class MatrixHumoid extends ChatHumoid {
                 return
             }
 
+            this.llama.setRunning(true)
             let replyId = await this.client.replyHtmlText(roomId,event,'Waiting for response...')
-            this.bridgeSend(event.content.body)
+            await this.bridgeSend(event.content.body)
             let responseProgress = ''
             let responseLastLength = 0
             let stream = setInterval(async ():Promise<void> => {
@@ -46,7 +47,8 @@ export default class MatrixHumoid extends ChatHumoid {
             let answer = await this.llama.prompt(event.content.body, (answerStream) => responseProgress += answerStream)
             clearInterval(stream)
             await this.editMsg(replyId, answer, false)
-            this.bridgeUpdate(answer, true)
+            await this.bridgeUpdate(answer, true)
+            this.llama.setRunning(false)
         })
     }
 
