@@ -54,7 +54,7 @@ export default class MatrixHumoid extends ChatHumoid {
     }
 
     async bridgeInbox(message: string, isRequest: boolean = true): Promise<void> {
-        if (this.bridgedMsg.length > 0)
+        if (this.bridgedMsg.length > 0 && isRequest)
             throw new Error('Can only bridge new request when the current one is clear')
         let bridgedPrompt = await this.client.sendNotice(config.matrix_room_id, message)
         if (isRequest) {
