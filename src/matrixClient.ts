@@ -26,7 +26,8 @@ export default class MatrixHumoid extends ChatHumoid {
             if (roomId !== config.matrix_room_id) return
             if (event.content.msgtype !== 'm.text') return
             if (event.content['m.relates_to'] && event.content['m.relates_to'].rel_type === 'm.replace') return
-            if (event.content.body.startsWith(config.ignore_prefix)) return
+            if (event.content.body.startsWith(config.ignore_prefix))
+                return await this.bridgeSend(event.content.body, false)
 
             if (this.llama.isRunning()) {
                 await this.client.replyNotice(roomId,event,'Another request is already running, please wait until it completes and try again later.')
@@ -35,7 +36,7 @@ export default class MatrixHumoid extends ChatHumoid {
 
             this.llama.setRunning(true)
             let replyId = await this.client.replyHtmlText(roomId,event,'Waiting for response...')
-            await this.bridgeSend(event.content.body)
+            await this.bridgeSend(event.content.body, true)
             let responseProgress = ''
             let responseLastLength = 0
             let stream = setInterval(async ():Promise<void> => {
@@ -52,12 +53,14 @@ export default class MatrixHumoid extends ChatHumoid {
         })
     }
 
-    async bridgeInbox(message: string): Promise<void> {
+    async bridgeInbox(message: string, isRequest: boolean = true): Promise<void> {
         if (this.bridgedMsg.length > 0)
             throw new Error('Can only bridge new request when the current one is clear')
         let bridgedPrompt = await this.client.sendNotice(config.matrix_room_id, message)
-        let bridgedPromptEvt = await this.client.getEvent(config.matrix_room_id, bridgedPrompt)
-        this.bridgedMsg = await this.client.replyHtmlText(config.matrix_room_id, bridgedPromptEvt, 'Waiting for response...')
+        if (isRequest) {
+            let bridgedPromptEvt = await this.client.getEvent(config.matrix_room_id, bridgedPrompt)
+            this.bridgedMsg = await this.client.replyHtmlText(config.matrix_room_id, bridgedPromptEvt, 'Waiting for response...')
+        }
     }
 
     async bridgeEdit(message: string, isFinal: boolean): Promise<void> {

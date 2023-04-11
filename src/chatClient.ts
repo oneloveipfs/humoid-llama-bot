@@ -18,7 +18,7 @@ export default abstract class ChatHumoid {
      * Handle incoming requests from bridge
      * @param message the incoming prompt request
      */
-    abstract bridgeInbox(message: string): Promise<void>
+    abstract bridgeInbox(message: string, isRequest: boolean): Promise<void>
     /**
      * Handle incoming message updates from bridge
      * @param message updated message
@@ -36,9 +36,9 @@ export default abstract class ChatHumoid {
      * Disseminate incoming requests across bridge
      * @param message the incoming prompt request
      */
-    async bridgeSend(message: string): Promise<void> {
+    async bridgeSend(message: string, isRequest: boolean): Promise<void> {
         for (let i in this.bridgedChats)
-            await this.bridgedChats[i].bridgeInbox(message)
+            await this.bridgedChats[i].bridgeInbox(message, isRequest)
     }
     /**
      * Disseminate message updates across bridge

@@ -25,7 +25,8 @@ export default class DiscordHumoid extends ChatHumoid {
             if (msg.webhookId) return
             if (msg.author.id === this.client.user!.id) return
             if (msg.channel.id !== config.discord_channel_id) return
-            if (msg.content.startsWith(config.ignore_prefix)) return
+            if (msg.content.startsWith(config.ignore_prefix))
+                return await this.bridgeSend(msg.author.username+'#'+msg.author.tag+': '+msg.content, false)
 
             if (this.llama.isRunning()) {
                 await msg.reply({
@@ -38,7 +39,7 @@ export default class DiscordHumoid extends ChatHumoid {
             let reply = await msg.reply({
                 content: config.discord_loading_emoji_id
             })
-            await this.bridgeSend(msg.author.username+'#'+msg.author.tag+': '+msg.content)
+            await this.bridgeSend(msg.author.username+'#'+msg.author.tag+': '+msg.content, true)
             let responseProgress = ''
             let responseLastLength = 0
             let stream = setInterval(async ():Promise<void> => {
@@ -55,13 +56,14 @@ export default class DiscordHumoid extends ChatHumoid {
         })
     }
 
-    public async bridgeInbox(message: string): Promise<void> {
+    public async bridgeInbox(message: string, isRequest: boolean = true): Promise<void> {
         if (this.bridgedMsg !== null)
             throw new Error('Can only bridge new request when the current one is clear')
         let channel = await this.client.channels.fetch(config.discord_channel_id)
         if (channel?.isTextBased()) {
             let bridgedPrompt = await channel.send({ content: message })
-            this.bridgedMsg = await bridgedPrompt.reply({ content: config.discord_loading_emoji_id })
+            if (isRequest)
+                this.bridgedMsg = await bridgedPrompt.reply({ content: config.discord_loading_emoji_id })
         } else
             throw new Error('Not a text based channel, please ensure that the Discord channel ID is specified correctly in the config.')
     }
