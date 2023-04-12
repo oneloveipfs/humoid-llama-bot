@@ -1,5 +1,5 @@
 declare namespace config {
-    const log_level: string
+    const log_level: 'warn' | 'info' | 'debug' | 'trace'
     const exec_path: string
     const exec_args: string
     const model_path: string
